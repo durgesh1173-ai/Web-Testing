@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULTRA SEQUENCER PRO v11 — FFmpeg Engine</title>
+
+<style>
+:root{
+  --primary:#0066ff;
+  --bg:#f0f2f5;
+  --card:#ffffff;
+  --text:#1a1d21;
+  --border:#e1e4e8;
+  --accent:#8b5cf6;
+  --danger: #ef4444;
+}
+
+body{
+  margin:0;
+  padding:10px;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.5;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:20px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+h2, h3 { margin-top: 0; color: #0f172a; }
+
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap:16px;
+  margin-bottom: 20px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+label{
+  font-size:13px;
+  font-weight:700;
+  color:#475569;
+}
+
+input,select{
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-weight:600;
+  font-size: 14px;
+  background: #fff;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button{
+  flex: 1;
+  min-width: 140px;
+  padding: 14px 20px;
+  border-radius:12px;
+  border:none;
+  cursor:pointer;
+  font-weight:700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button:active { transform: scale(0.98); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.main-btn{background:var(--primary);color:#fff;}
+.reset-btn{background:#fee2e2;color:var(--danger); flex: 0 1 auto; min-width: 120px;}
+.download-btn{background:#16a34a;color:#fff; width: 100%; margin-top: 15px;}
+.toggle-btn{background:#f1f5f9;color:#475569; border: 1px solid var(--border);}
+.toggle-active{background:var(--accent);color:#fff; border-color: var(--accent);}
+
+#previewArea{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:15px;
+  background:#f8fafc;
+  border: 1px dashed var(--border);
+  border-radius:12px;
+  min-height:100px;
+}
+#previewArea img{height:80px; border-radius:8px; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+
+#miniProgressWrap{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap:12px;
+  margin-top:20px;
+}
+
+.miniBox{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+}
+
+.miniLabel{
+  font-size:12px;
+  margin-bottom:8px;
+  font-weight: 600;
+  color:#64748b;
+  display:flex;
+  justify-content:space-between;
+}
+
+.miniBar{
+  height:8px;
+  background:#f1f5f9;
+  border-radius:10px;
+  overflow:hidden;
+}
+.miniFill{
+  height:100%;
+  width:0%;
+  background:var(--primary);
+  transition: width .2s ease;
+}
+
+#mergeWrap{margin-top:20px; display:none;}
+#mergeBar{
+  height:12px;
+  background:#f1f5f9;
+  border-radius:10px;
+  overflow:hidden;
+}
+#mergeFill{
+  height:100%;
+  width:0%;
+  background:#f59e0b;
+  transition: width .2s ease;
+}
+#mergeText{
+  font-size:14px;
+  font-weight: 600;
+  margin-top:8px;
+  color:#1e293b;
+  text-align: center;
+}
+
+/* Engine Progress UI */
+#engineStatus {
+    background: #1e293b;
+    color: #38bdf8;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-family: monospace;
+    font-size: 12px;
+    display: none;
+}
+
+video{
+  width:100%;
+  margin-top:15px;
+  border-radius:12px;
+  background: #000;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; 
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalIn 0.25s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal-title { 
+  font-size: 22px; 
+  font-weight: 800; 
+  margin-bottom: 12px; 
+  color: #0f172a; 
+}
+
+.modal-desc { 
+  font-size: 15px; 
+  color: #64748b; 
+  margin-bottom: 24px; 
+  line-height: 1.6;
+}
+
+.modal-btns { 
+  display: flex; 
+  gap: 10px; 
+}
+
+.btn-confirm { background: var(--danger); color: white; flex: 1; }
+.btn-cancel { background: #f1f5f9; color: #475569; flex: 1; }
+
+@media (max-width: 480px) {
+  .modal-btns { flex-direction: column; }
+  .modal-card { padding: 20px; }
+}
+
+@media (max-width: 600px) {
+  .button-group button { flex: 1 1 100%; }
+  .grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="resetModal">
+  <div class="modal-card">
+    <div class="modal-title">Reset Project?</div>
+    <div class="modal-desc">Are You Sure You Want To Clear All Data? This Will Remove Your Uploaded Videos And Current Progress Permanently.</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeResetModal()">Keep Project</button>
+      <button class="btn-confirm" onclick="confirmReset()">Clear Everything</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+<div class="card">
+  <h2>Frame Sequencing Editor <span style="font-size: 0.6em; background: #38bdf8; color: #fff; padding: 2px 8px; border-radius: 20px; vertical-align: middle;">FFMPEG CORE</span></h2>
+  
+  <div id="engineStatus">
+    Loading FFmpeg Engine... 0%
+    <div class="miniBar" style="margin-top:5px;"><div id="engineFill" class="miniFill" style="background:#38bdf8;"></div></div>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Max Duration / Clip (Sec)</label>
+      <input type="number" id="duration" value="2" step="0.1">
+    </div>
+    <div class="field">
+      <label>Target FPS</label>
+      <select id="fps">
+        <option>30</option>
+        <option selected>60</option>
+        <option>90</option>
+        <option>120</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>🧩 Step Logic</label>
+      <input type="text" id="stepInfo" value="Staggered Mode" disabled>
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button class="main-btn" id="uploadBtn" onclick="fileIn.click()" disabled> Loading Engine...</button>
+    <button class="reset-btn" onclick="openResetModal()">Reset</button>
+  </div>
+  
+  <input type="file" id="fileIn" multiple accept="video/*" hidden>
+  <div id="miniProgressWrap"></div>
+  <div id="mergeWrap">
+    <div id="mergeBar"><div id="mergeFill"></div></div>
+    <div id="mergeText">Merging: 0%</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Sequence Preview</h3>
+  <div id="previewArea"></div>
+  <div class="button-group">
+    <button id="renderBtn" class="main-btn" onclick="renderVideo()" disabled>▶ Start Merge</button>
+    <button id="dupBtn" class="toggle-btn toggle-active" onclick="toggleDup()">Deep Clean Frames: ON</button>
+  </div>
+  <button id="downloadBtn" class="download-btn" style="display:none">Download HQ Video</button>
+</div>
+
+<div id="outputCard" class="card" style="display:none">
+  <h3> Final Output</h3>
+  <video id="finalVideo" controls></video>
+</div>
+</div>
+
+<canvas id="engineCanvas" style="display:none"></canvas>
+
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+
+<script>
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ 
+    log: false,
+    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+});
+
+let clipBuffers=[];
+let frameQueue=[];
+let processing=false;
+let finalBlob=null;
+let removeDups = true; 
+
+const fileIn=document.getElementById('fileIn');
+const canvas=document.getElementById('engineCanvas');
+const ctx=canvas.getContext('2d',{alpha:false});
+const previewArea=document.getElementById('previewArea');
+const renderBtn=document.getElementById('renderBtn');
+const dupBtn=document.getElementById('dupBtn');
+const fpsSel=document.getElementById('fps');
+const durIn=document.getElementById('duration');
+const miniWrap=document.getElementById('miniProgressWrap');
+const finalVideo=document.getElementById('finalVideo');
+const outputCard=document.getElementById('outputCard');
+const downloadBtn=document.getElementById('downloadBtn');
+const mergeWrap=document.getElementById('mergeWrap');
+const mergeFill=document.getElementById('mergeFill');
+const mergeText=document.getElementById('mergeText');
+const resetModal=document.getElementById('resetModal');
+const engineStatus = document.getElementById('engineStatus');
+const engineFill = document.getElementById('engineFill');
+const uploadBtn = document.getElementById('uploadBtn');
+
+// Initialize FFmpeg with Progress Bar
+(async () => {
+    engineStatus.style.display = 'block';
+    ffmpeg.setProgress(({ ratio }) => {
+        // This handles the engine loading and processing progress
+        const p = Math.floor(ratio * 100);
+        if(ratio <= 1) {
+            engineFill.style.width = p + "%";
+            engineStatus.innerText = `Engine Syncing: ${p}%`;
+        }
+    });
+
+    try {
+        await ffmpeg.load();
+        engineStatus.style.background = "#065f46";
+        engineStatus.style.color = "#34d399";
+        engineStatus.innerText = "FFmpeg Engine Ready (High Precision Mode)";
+        uploadBtn.disabled = false;
+        uploadBtn.innerText = "Upload Videos";
+        setTimeout(() => engineStatus.style.display = 'none', 3000);
+    } catch (e) {
+        engineStatus.innerText = "Engine Error. Please refresh.";
+    }
+})();
+
+function openResetModal(){ resetModal.classList.add('active'); }
+function closeResetModal(){ resetModal.classList.remove('active'); }
+function confirmReset(){ location.reload(); }
+
+function toggleDup(){
+  removeDups=!removeDups;
+  dupBtn.textContent=`Deep Clean Frames: ${removeDups?'ON':'OFF'}`;
+  dupBtn.classList.toggle('toggle-active',removeDups);
+}
+
+fileIn.onchange=async()=>{
+  if(processing) return;
+  const files=[...fileIn.files];
+  if(!files.length) return;
+  processing=true;
+  clipBuffers=[];
+  miniWrap.innerHTML="";
+  renderBtn.disabled=true;
+
+  const bars=files.map((f,i)=>{
+    const box=document.createElement('div');
+    box.className='miniBox';
+    box.innerHTML=`<div class="miniLabel"><span>Clip ${i+1}</span><span class="pct">0%</span></div><div class="miniBar"><div class="miniFill"></div></div>`;
+    miniWrap.appendChild(box);
+    return {fill:box.querySelector('.miniFill'),pct:box.querySelector('.pct')};
+  });
+
+  for(let i=0; i < files.length; i++) {
+      await extractWithFFmpeg(files[i], i, bars[i]);
+  }
+
+  buildSequence();
+  renderBtn.disabled=false;
+  processing=false;
+};
+
+/* FFmpeg Extraction: Much more precise than HTML5 Video Player */
+async function extractWithFFmpeg(file, index, barObj) {
+    const name = `input${index}.mp4`;
+    ffmpeg.FS('writeFile', name, await fetchFile(file));
+
+    const fps = fpsSel.value;
+    const duration = durIn.value;
+
+    // FFmpeg command: High precision frame extraction
+    // -t: limit duration, -vf fps: exact frame rate sampling, %03d: naming pattern
+    await ffmpeg.run('-i', name, '-t', duration, '-vf', `fps=${fps}`, `out_${index}_%04d.jpg`);
+
+    const frames = [];
+    const fsFiles = ffmpeg.FS('readdir', '/');
+    
+    // Collect the created JPGs
+    const frameFiles = fsFiles.filter(f => f.startsWith(`out_${index}_`) && f.endsWith('.jpg')).sort();
+    
+    for(let j=0; j < frameFiles.length; j++) {
+        const data = ffmpeg.FS('readFile', frameFiles[j]);
+        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/jpeg' }));
+        frames.push(url);
+        
+        // Cleanup FS as we go to save memory
+        ffmpeg.FS('unlink', frameFiles[j]);
+
+        const pct = ((j + 1) / frameFiles.length) * 100;
+        barObj.fill.style.width = pct + "%";
+        barObj.pct.textContent = Math.floor(pct) + "%";
+    }
+
+    clipBuffers[index] = frames;
+    ffmpeg.FS('unlink', name); // Clean up original video
+}
+
+function buildSequence(){
+  const numClips=clipBuffers.length;
+  frameQueue=[];
+  if(!numClips) return;
+  const maxLen = Math.max(...clipBuffers.map(c => c.length));
+  for(let i=0; i < maxLen; i++){
+    const clipIndex = i % numClips;
+    const clip = clipBuffers[clipIndex];
+    if(clip[i]) frameQueue.push(clip[i]);
+  }
+  rebuildPreview();
+}
+
+function rebuildPreview(){
+  previewArea.innerHTML="";
+  frameQueue.slice(0,60).forEach(src=>{
+    const img=new Image(); img.src=src; previewArea.appendChild(img);
+  });
+}
+
+async function renderVideo(){
+  if(!frameQueue.length) return;
+  const fpsVal=parseInt(fpsSel.value);
+  mergeWrap.style.display='block';
+  mergeFill.style.width='0%';
+  mergeText.textContent='Initializing Pro Merge...';
+
+  const firstImg=await loadImg(frameQueue[0]);
+  canvas.width=firstImg.width;
+  canvas.height=firstImg.height;
+
+  const stream=canvas.captureStream(fpsVal);
+  const recorder=new MediaRecorder(stream,{
+    mimeType:'video/webm;codecs=vp9',
+    videoBitsPerSecond:50000000 
+  });
+
+  const chunks=[];
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+    finalBlob=new Blob(chunks,{type:'video/webm'});
+    finalVideo.src=URL.createObjectURL(finalBlob);
+    outputCard.style.display='block';
+    downloadBtn.style.display='block';
+    mergeText.textContent='Merge Complete';
+  };
+
+  recorder.start();
+
+  let lastFrameData = null;
+  for(let i=0; i<frameQueue.length; i++){
+    const img = await loadImg(frameQueue[i]);
+    ctx.drawImage(img, 0, 0);
+
+    let isBad = false;
+    if(removeDups){
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        if(lastFrameData && isDeepMatch(lastFrameData, imgData)) isBad = true;
+        else if (isGlitchFrame(imgData)) isBad = true;
+        if(!isBad) lastFrameData = imgData;
+    }
+
+    if(!isBad || !lastFrameData) {
+        // Draw current
+    } else {
+        const lastImg = new ImageData(lastFrameData, canvas.width, canvas.height);
+        ctx.putImageData(lastImg, 0, 0);
+    }
+
+    const pct = ((i+1)/frameQueue.length)*100;
+    mergeFill.style.width = pct+"%";
+    mergeText.textContent = `Processing Frame ${i+1}/${frameQueue.length}`;
+    
+    // Wait for frame to be captured by stream
+    await new Promise(r => setTimeout(r, 1000/fpsVal));
+  }
+
+  setTimeout(()=>recorder.stop(), 500);
+}
+
+function isDeepMatch(d1, d2){
+  let diff = 0;
+  for(let i=0; i<d1.length; i+=2000){
+    if(Math.abs(d1[i] - d2[i]) > 10) diff++;
+    if(diff > 5) return false; 
+  }
+  return true;
+}
+
+function isGlitchFrame(data) {
+  let brightness = 0;
+  for (let i = 0; i < data.length; i += 4000) {
+    brightness += (data[i] + data[i+1] + data[i+2]) / 3;
+  }
+  return (brightness / (data.length / 4000)) < 2;
+}
+
+function loadImg(src){ return new Promise(r=>{ const i=new Image(); i.onload=()=>r(i); i.src=src; }); }
+
+downloadBtn.onclick=()=>{
+  if(!finalBlob) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(finalBlob);
+  a.download='ultra_ffmpeg_sequence.webm';
+  a.click();
+};
+</script>
+</body>
+</html>
